@@ -9,44 +9,63 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  String Parameter="";
+  String Parameter = "";
+  String routeName = "";
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      routes: <String,WidgetBuilder>{
-        '/':(BuildContext context)=>MyHomePage(title: 'Flutter Uni Link Demo'),
-        '/Deal':(BuildContext context)=>DealPage(''),
-        '/Detail':(BuildContext context)=>DealDetailPage(''),
 
-
+      //latest
+      routes: <String, WidgetBuilder>{
+        MyHomePage.routeName: (context) =>
+            MyHomePage(title: "Flutter Uni Link Demo", currentRoute: routeName),
       },
-onGenerateRoute: (RouteSettings settings){
 
-      final List<String> pathElements = settings.name.split('/');
-      if (pathElements[0] != '') {
-        return null;
-      }
-      if (pathElements[1] == 'Detail') {
-        return MaterialPageRoute<bool>(
-          builder: (BuildContext context) => DealDetailPage(pathElements[2]),
-        );
-      }
-      return null;
-    },
+      onGenerateRoute: (RouteSettings settings) {
+        var page;
+        routeName = settings.name;
+
+        switch (routeName) {
+          case DealPage.routeName:
+            page = DealPage(
+              settings.arguments,
+            );
+            return MaterialPageRoute(builder: (context) => page);
+            break;
+          case "/deal/":
+            page = DealDetailPage(
+              settings.arguments,
+            );
+            return MaterialPageRoute(builder: (context) => page);
+            break;
+
+          default:
+            return MaterialPageRoute(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: Text('No path for ${settings.name}'),
+                ),
+              ),
+            );
+        }
+      },
 
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  static const String routeName = "/";
+  String currentRoute;
+
+  MyHomePage({Key key, this.title, this.currentRoute}) : super(key: key);
 
   final String title;
 
@@ -71,50 +90,39 @@ class _MyHomePageState extends State<MyHomePage> {
       initialLink = await getInitialLink();
       setState(() {
         linktext = initialLink;
-
-        // if(initialLink!=null)
-        // checkParameter(initialLink);
       });
-
+      //the link enter in broswer or select in app
       print('initial link: $initialLink');
-
-      // Parse the link and warn the user, if it is not correct,
-      // but keep in mind it could be `null`.
     } on PlatformException {
       initialLink = 'Failed to get initial link.';
 
       // Handle exception by warning the user their action did not succeed
-      // return?
+
     }
 
     _sub = getLinksStream().listen((String link) {
       print("sub $_sub");
-
-      // Parse the link and warn the user, if it is not correct
     }, onError: (err) {
       // Handle exception by warning the user their action did not succeed
     });
 
-   if (initialLink != null) checkParameter(initialLink);
+    //when link is not null then check for parameter
+    if (initialLink != null) checkParameter(initialLink);
   }
 
   checkParameter(String link) {
+    //to get parameter like /123
     String parameter = "", page = "";
     var str = link.split('/');
-    if (str.length == 4) page = str[3].trim();
-    else  if (str.length == 5)
-    {parameter = str[4].trim();
+    if (str.length == 4)
+      page = str[3].trim();
+    else if (str.length == 5) {
+      parameter = str[4].trim();
       page = str[3].trim();
     }
 
-    if (page == "deals"||page=="deal") {
-
-
-  //    Navigator.of(context).push(MaterialPageRoute(
-      //     builder: (BuildContext context) => DealPage(parameter)));
-
-   Navigator.of(context).pushNamed('/Deal');
-
+    if (page == "deals" || page == "deal") {
+      Navigator.of(context).pushNamed('/deal', arguments: parameter);
     }
   }
 
@@ -136,8 +144,6 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: () {
                 Navigator.push(context,
                     MaterialPageRoute(builder: (context) => DealPage("")));
-
-
               },
             ),
           ],
@@ -149,6 +155,8 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class DealPage extends StatefulWidget {
+  static const String routeName = "/deal";
+
   String parameter;
 
   DealPage(this.parameter);
@@ -161,15 +169,16 @@ class _DealPageState extends State<DealPage> {
   @override
   void initState() {
     // TODO: implement initState
+
     super.initState();
     if (widget.parameter != "") directDetailPage(widget.parameter);
   }
 
+  //the function to go to detail page
   directDetailPage(String parameter) {
-
- //Navigator.of(context).push(MaterialPageRoute(
-   // builder: (BuildContext context) => DealDetailPage(parameter)));
-    Navigator.of(context).pushNamed('/Detail/$parameter');
+    Future.delayed(Duration.zero, () {
+      Navigator.of(context).pushNamed('/deal/', arguments: parameter);
+    });
   }
 
   @override
@@ -181,8 +190,11 @@ class _DealPageState extends State<DealPage> {
       body: Container(
         child: Column(
           children: <Widget>[
-
             Text("Deal page"),
+            RaisedButton(
+              onPressed: () => directDetailPage(widget.parameter),
+              child: Text("Detail"),
+            )
           ],
         ),
       ),
@@ -205,12 +217,12 @@ class _DealDetailPageState extends State<DealDetailPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Deal Detail Page"),
-
       ),
       body: Container(
         child: Column(
           children: <Widget>[
             Text("Deal ${widget.parameter}"),
+    
           ],
         ),
       ),
